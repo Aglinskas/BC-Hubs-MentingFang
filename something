@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Sep 30 09:25:10 2019
+
+@author: aidasaglinskas
+"""
+import numpy as np
+from matplotlib import pyplot as plt
+from scipy.optimize import minimize  
+from scipy import stats
+
+fn = '/Users/aidasaglinskas/Desktop/MentingFang/Hub_vec.npy'
+hub = np.load(fn)
+
+fn = '/Users/aidasaglinskas/Desktop/MentingFang/ROI_vec.npy'
+roi = np.load(fn)
+
+hub.shape # (5, 14, 3, 6)
+roi.shape # (4, 14, 3, 6)
+
+rlbls = ['roi 1','roi 2','roi 3','roi 4']
+rlbls = ['FACE','BODY','OBJECT','SCENE']
+
+hlbls = ['hub 1','hub 2','hub 3','hub 4','hub 5']
+hlbls = ['Thalamus', 'Middle Cingulate', 'Posterior Cingulate', 'Angular Gyrus', 'Cerebellum']
+
+def get_X_matrix(roi_ind,run_ind):
+    #    roi_ind = 0
+    #    run_ind = 0
+    X = np.zeros([14,6])
+    for subject in range(roi.shape[1]):
+        for dist in range(roi.shape[3]):
+            X[subject,dist] = roi[roi_ind,subject,run_ind,dist]
+    return X
+
+def get_Y_matrix(hub_ind,run_ind):
+    #    hub_ind = 0
+    #    run_ind = 0
+    Y = np.zeros([14,6])
+    for subject in range(hub.shape[1]):
+        for dist in range(roi.shape[3]):
+            Y[subject,dist] = hub[hub_ind,subject,run_ind,dist]
+    return Y
+
+
+def get_vars(hub_ind,svec):
+    # 0th axis is roi/hub index
+    # First axis is the subjects
+    Y = hub[hub_ind,svec,:,:].mean(axis=1)
+    X1 = roi[0,svec,:,:].mean(axis=1)
+    X2 = roi[1,svec,:,:].mean(axis=1)
+    X3 = roi[2,svec,:,:].mean(axis=1)
+    X4 = roi[3,svec,:,:].mean(axis=1)
+    return Y,X1,X2,X3,X4
+
+
+hub_ind = 0
+svec = np.arange(14)
+
+Y,X1,X2,X3,X4 = get_vars(hub_ind,svec)
+
+def optimal_betas(hub_ind,svec):   
+    #    hub_ind = 0
+    #    svec = np.arange(14)
+    Y,X1,X2,X3,X4 = get_vars(hub_ind,svec)
+    params = np.array([1,2,3,4,5])
+    def objective(params):
+#        b0 = params[0]
+        b = params[1:] # from 1 to end
+        #params[0] = 0
+        Y_hat = params[0] + X1*params[1] + X2*params[2] + X3*params[3] + X4*params[4]
+        err = Y-Y_hat
+        sum_sq = np.sum(err**2)
+        return sum_sq
+    
+    
+    initGuess = [10,10,10,10,10]
+    sol = minimize(objective,initGuess,method='SLSQP') 
+    #print(sol.success)
+    #print(sol.fun)
+    #print(sol.x)
+    #print(sol.message)
+    return sol.fun,sol.x
+
+
+
+
+svec = np.arange(14)
+err,betas = optimal_betas(0,svec)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
